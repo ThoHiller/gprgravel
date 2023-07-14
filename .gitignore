@@ -1,0 +1,8 @@
+*.asv
+*.aux
+*.log
+*.toc
+*.sty
+*.mat
+/output
+/externals
