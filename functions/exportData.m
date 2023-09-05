@@ -96,8 +96,16 @@ if params.exportMAT
 end
 
 if params.exportH5
-
     params.save_h5 = 'GPRGRAVEL_full.h5';
+
+    str1 = 'EXPORT - saving data to HDF5 file ... ';
+    str2 = 'EXPORT - saving data to HDF5 file ... done.';
+    if isgui
+        set(gui.text_handles.Status,'String', str1);
+    else
+        disp(str1);
+    end
+    pause(0.01);
 
     % check if a PML should be used
     if params.exportPML
@@ -114,7 +122,7 @@ if params.exportH5
         % M = domain.final{1}.Lr(marg+1:end-marg,marg+1:end-marg,marg+1:end);
         kInnerX = marg+1+marg1(1):size(domain.final{1}.Lr,1)-marg-marg1(1);
         kInnerY = marg+1+marg1(2):size(domain.final{1}.Lr,2)-marg-marg1(2);
-        kInnerZ = 1:size(domain.final{1}.Lr,3)-marg-marg1(2);
+        kInnerZ = 1:size(domain.final{1}.Lr,3)-marg-marg1(3);
 
         if params.applyMarginMask
             kInnerX = kInnerX(2:end-1);
@@ -150,31 +158,14 @@ if params.exportH5
             curMask = params.masks{iMask};
 
             if isfield(curMask,'arrTiltDegXY')
+
                 szPML = size(M_pml);
-                maxX = domain.dx*szPML(1);
-                maxY = domain.dx*szPML(2);
-                xPML = domain.dx*((1:szPML(2))-domain.marg+pml_w(2));
-                yPML = domain.dx*((1:szPML(1))-domain.marg+pml_w(1));
-                zPML = domain.dx*((1:szPML(3))-domain.marg+pml_w(3));
-                [tmpY,tmpX,tmpZ] = meshgrid(xPML,yPML,zPML);
-                clear xPML yPML zPML
-
-                arrSlope = curMask.arrTiltDegXY;
-
-                if isfield(curMask,'zBaseMinTop')
-                    zBase = curMask.zBaseMinTop+abs((maxX-curMask.arrBaseXYZ(1))*tan(arrSlope(1)*pi/180) + abs(maxY-curMask.arrBaseXYZ(2))*tan(arrSlope(2)*pi/180));
-                    curMask.arrBaseXYZ(3) = zBase;
-                end
-                arrBase = curMask.arrBaseXYZ;
-
-
-                tmpSel = tmpZ <= (arrBase(3)+(arrBase(1)-tmpX)*tan(arrSlope(1)*pi/180) + (arrBase(2)-tmpY)*tan(arrSlope(2)*pi/180));
-                clear tmpZ tmpX tmpZ
+                [index] = getMaskVoxel(curMask,szPML,domain,params,'export');
 
                 % mark masked region as air
-                M_pml(tmpSel) = 0;
+                M_pml(index) = 0;
 
-                clear tmpSel;
+                clear index;
             end
         end
 
@@ -207,27 +198,59 @@ if params.exportH5
         M5(M_pml==params.ID_MASKED.PML.Lr) = params.ID_MASKED.PML.M5; % mark PML
         M5(M_pml==params.ID_MASKED.Target.Lr) = params.ID_MASKED.Target.M5; % mark Target
 
-        if true
+        % show the hdf5 export output
+        if params.exportFIG
             xScale = ((0:size(M5,1))-pml_w(1))*domain.dx;
             yScale = ((0:size(M5,2))-pml_w(2))*domain.dx;
             zScale = ((0:size(M5,3))-domain.marg)*domain.dx;
 
-            hFigVerbose = figure('Name','hd5_preview');
+            if params.useTarget
+                mycolors = [1 1 1;
+                    0.9 0.7 0.1;
+                    0 0.4 0.7;
+                    0.9 0.3 0.1;
+                    0.5 0.7 0.2];
+                mylabels = {'0-air','1-matrix','2-water','3-PML','4-target'};
+                cticks = [0.4 1.2 2 2.8 3.6];
+                clim = [0 4];
+            else
+                mycolors = [1 1 1;
+                    0.9 0.7 0.1;
+                    0 0.4 0.7;
+                    0.9 0.3 0.1];
+                mylabels = {'0-air','1-matrix','2-water','3-PML'};
+                cticks = [0.375 1.125 1.875 2.625];
+                clim = [0 3];
+            end
+
+            hFigVerbose = figure('Name','hdf5_preview');
             subplot(1,2,1);
             imagesc(xScale,zScale,squeeze(M5(:,round(size(M5,2)/2),:)).');
-            set(gca,'DataAspectRatio',[1 1 1],'YDir','normal');
+            set(gca,'DataAspectRatio',[1 1 1],'YDir','reverse','CLim',clim);
             xlabel('x (m)');
             ylabel('z (m)');
             grid on;
+            colormap(gca,mycolors);
 
             subplot(1,2,2);
             imagesc(yScale,zScale,squeeze(M5(round(size(M5,1)/2),:,:)).');
-            set(gca,'DataAspectRatio',[1 1 1],'YDir','normal');
+            set(gca,'DataAspectRatio',[1 1 1],'YDir','reverse','CLim',clim);
             xlabel('y (m)');
             ylabel('z (m)');
             grid on;
-            savefig(hFigVerbose,fullfile(params.EXPORTpath,'hd5_exportPreview.fig'));
-            print(hFigVerbose,fullfile(params.EXPORTpath,'hd5_exportPreview.png'),'-dpng');
+            colormap(gca,mycolors);
+            posax = get(gca,'Position');
+            cbh = colorbar(gca,'EastOutside');
+            set(cbh,'XTick',cticks,'XTickLabel',mylabels);
+            set(gca,'Position',posax);
+
+            savefig(hFigVerbose,fullfile(params.EXPORTpath,'hdf5_exportPreview.fig'));
+
+            set(hFigVerbose,'PaperType','A4','PaperUnits','centimeters',...
+                    'PaperOrientation','landscape',...
+                    'PaperPositionMode','manual',...
+                    'PaperPosition',[1 2 28 15]);
+            print(hFigVerbose,fullfile(params.EXPORTpath,'hdf5_exportPreview.png'),'-dpng');
         end
 
         if isfield(params,'PMLtruncate')
@@ -267,7 +290,10 @@ if params.exportH5
             sprintf('%5.3f',domain.dx),' = ',sprintf('%4.2f',domain.dx*(ny)),'m'];
         infostr3{3,1} = ['z ',sprintf('%3d',nz),' -> ',sprintf('%3d',nz),'*',...
             sprintf('%5.3f',domain.dx),' = ',sprintf('%4.2f',domain.dx*(nz)),'m'];
-    else
+
+    else % params.exportPML
+
+        % proceed without PML
         % boundary
         marg = domain.marg;
         % container without boundaries except z+
@@ -309,7 +335,7 @@ if params.exportH5
             sprintf('%5.3f',domain.dx),' = ',sprintf('%4.2f',domain.dx*(ny)),'m'];
         infostr3{3,1} = ['z ',sprintf('%3d',nz),' -> ',sprintf('%3d',nz),'*',...
             sprintf('%5.3f',domain.dx),' = ',sprintf('%4.2f',domain.dx*(nz)),'m'];
-    end
+    end % params.exportPML
 
     params.arrDomainOut = domain.dx*size(M5);
 
@@ -370,6 +396,12 @@ if params.exportH5
     fprintf(fileID,'%s\n',infostr4);
     fclose(fileID);
 
+    if isgui
+        set(gui.text_handles.Status,'String', str2);
+    else
+        disp(str2);
+    end
+    pause(0.01);
 end
 
 return

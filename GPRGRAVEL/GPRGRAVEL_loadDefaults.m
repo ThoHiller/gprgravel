@@ -106,8 +106,9 @@ init.params.maskdipy = 0;
 init.params.useTarget = false;
 % target center point
 init.params.targetCenter = [init.domain.xm(1)/2 init.domain.ym(1)/2 init.domain.zm(1)/2];
-% phi and theta angles to orient the target
-init.params.targetOrient = [0 0];
+% theta and phi angles to orient the target
+init.params.targetTheta = 0;
+init.params.targetPhi = 0;
 
 % saturation profile (you can switch it on/off here)
 init.params.useSatProfile = false;
@@ -156,8 +157,10 @@ init.params.updateVisualSec = 120;
 init.params.exportMAT = true;
 init.params.exportH5 = true;
 init.params.exportPML = true;
+init.params.exportFIG = true;
 init.params.PMLduplicate = false;
 init.params.PMLtruncate = false;
+% thickness of PML layer (x,y,z)
 init.params.pml_w = [10,10,50];
 
 init.monitor = getMonitordata;

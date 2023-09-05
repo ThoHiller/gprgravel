@@ -96,7 +96,7 @@ n_start = monitor.n;
 if size(xyzr0,1) >= monitor.n
     if xyzr0(monitor.n,4) < 0
         monitor.n = n_start+1;
-        n_start = monitor.n;
+%         n_start = monitor.n;
     end
 end
 
@@ -140,12 +140,6 @@ monitor.voxHist = zeros(3,length(grains.rbins));
 monitor.voxHist(1,:) = grains.rbins;
 monitor.voxHist(3,:) = monitor.nVoxAim;
 
-% plotting during calculation
-% plotting = init_plotting(domain,grains,monitor);
-% plotting.threshMaxTry = monitor.threshMaxTry;
-% plotting.HullHist = cat(1,linspace(0,1,51),zeros(1,51));
-% plotting.HullLims = [0 0];
-
 monitor.boolMustTouch = false;
 
 % run backwards to start with the largest grains
@@ -173,10 +167,6 @@ monitor.arrPackVel(2,:) = [toc monitor.nVox(1)];
 monitor.velPackMax = 0;
 
 monitor.por_cur = 1-monitor.nVox(1)/domain.VOL0;
-
-if isfield(domain,'plotting')
-    plotting = domain.plotting;
-end
 
 monitor.log = [monitor.log sprintf('%s: Switching to tight placement of grains.\n',datestr(now,'dd.mm.yy HH:MM'))];
 grains.nLastFreely = monitor.n-1;
@@ -228,7 +218,6 @@ for i = iBinStart:-1:1
 
     monitor.binStat(4,i) = max([monitor.binStat(4,i) monitor.stat(4)]);
     monitor.voxHist(2,1:i) = monitor.nVox(1);
-%     plotting = update_PackingMonitor(M,L2,plotting,monitor);
 
     switch grains.shape
         case 'sphere'
@@ -311,7 +300,6 @@ for i = iBinStart:-1:1
         if (mod(monitor.stat(4),nMod_UpdateIndexList) == nMod_UpdateIndexList-1 )
             monitor.binStat(4,i) = max([monitor.binStat(4,i) monitor.stat(4)]);
             monitor.voxHist(2,1:i) = monitor.nVox(1);
-%             plotting = update_PackingMonitor(M,L2,plotting,monitor);
         end
 
         % draw a new center position based on the center of an already placed grain
@@ -382,7 +370,6 @@ for i = iBinStart:-1:1
             [i1,i2,i3] = ind2sub(size(M),Mindex(monitor.iRandPos));
             center = [i1 i2 i3];
             monitor.iRandPos = monitor.iRandPos+1;
-
         end
 
         % move the grain to the current center point
@@ -464,7 +451,6 @@ for i = iBinStart:-1:1
 
         if (mod(monitor.stat(1),nDumpUpdateCurBin) == 0) || (mod(round(monitor.t1),params.dumpSec) == 0) || (monitor.stat(1) == 1)
             monitor.i = i;  % update coutner for current grain size bin
-%             monitor = printProgress(monitor);
         end
 
         if (mod(round(monitor.t1),params.updateVisualSec) == 0)
@@ -559,8 +545,6 @@ statStruct.runtimeMin = t/60;
 statStruct.stat = monitor.stat;
 domain.statB = statStruct;
 domain.monitor = monitor;
-
-% domain.plotting = plotting;
 
 return
 

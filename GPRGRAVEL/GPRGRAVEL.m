@@ -30,8 +30,8 @@ function GPRGRAVEL
 %------------- BEGIN CODE --------------
 
 %% GUI 'header' info and default GUI settings
-myui.version = '0.1.0';
-myui.date = '14.07.2023';
+myui.version = '0.1.1';
+myui.date = '05.09.2023';
 myui.author = 'Thomas Hiller';
 
 myui.fontsize = 8;

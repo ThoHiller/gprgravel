@@ -95,7 +95,8 @@ spacing = 3;
 % maximal height of each panel
 grains_max = 6*edith+7*spacing+headerh;
 % params_max = 8*edith+9*spacing+headerh-14;
-params_max = 13*edith+14*spacing+headerh-5;
+% params_max = 13*edith+14*spacing+headerh-5;
+params_max = 17*edith+18*spacing+headerh-9;
 domain_max = 8*edith+9*spacing+headerh;
 % save the heights information (needed for minimizing the panels)
 myui.heights = [22 22 22 -1; grains_max domain_max params_max -1];

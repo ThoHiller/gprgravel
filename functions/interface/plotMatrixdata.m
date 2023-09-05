@@ -36,7 +36,7 @@ grains = data.grains;
 domain = data.domain;
 
 switch type
-    case 'monitor'
+    case {'monitor','result'}
         % get axis
         ax = gui.axes_handles.Volume;
         clearSingleAxis(ax);
@@ -91,7 +91,7 @@ switch type
         cmap = flipud(copper(numel(grains.rbins)));
         cmap = [cmap;0 0 1];
         set(ax,'Colormap',cmap);
-        set(ax,'CLim',[1e-4  max(grains.rbins)*1.1]);
+        set(ax,'CLim',[1e-4  max(grains.rbins)*1.1],'ColorScale','lin');
 
         % axis properties
         rmax = grains.rmax;
@@ -107,9 +107,20 @@ switch type
         set(ax,'FontSize',gui.myui.axfontsize);
         hold(ax,'off');
 
-    case 'result'
+        % colorbar
+        cbh = colorbar(ax,'Location','EastOutside');
+        vec = [1e-4 0.005 0.01 0.015 0.02 0.025 0.03 0.035 0.04 0.045 0.5];
+        vec = vec(vec<max(grains.rbins));
+        vecstr = cell(1,1);
+        for i1 = 1:numel(vec)
+            vecstr{i1} = sprintf('%4.3f',vec(i1));
+        end
+        vecstr{1} = 'r [m]';
+        vecstr{end+1} = 'water';
+        set(cbh,'Ticks',[vec max(grains.rbins)*1.1],'TickLabels',vecstr); 
 
-        
+    otherwise
+        % nothing to do        
 end
 
 %------------- END OF CODE --------------

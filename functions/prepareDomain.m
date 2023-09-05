@@ -86,15 +86,6 @@ Vol0b = (domain.nx0+marg/2)*(domain.ny0+marg/2)*(domain.nz0+marg/2);
 % margin volume (NOTE: why is it not VOL2-VOL0?)
 VOLmarg = VOL2-Vol0b;
 
-% take care of target
-if params.useTarget
-    target = params.target;
-    target_vol = sum(target(:)>1);
-    params.VOLtarget = target_vol;
-else
-    params.VOLtarget = 0;
-end
-
 % set up matrices for storing the final positions of the grains
 % logical matrix to mark occupied voxels
 M = false(domain.nx,domain.ny,domain.nz);
@@ -110,13 +101,13 @@ tmpInd = reshape(1:numel(L2),size(L2));
 kInner = tmpInd(marg+1:end-marg,marg+1:end-marg,marg+1:end-marg);
 kInner = kInner(:);
 kMargin = setdiff(tmpInd,kInner);
-% at these voxel no grains centers can be set
+% at these voxel no grain centers can be set
 M_valCtr(kMargin) = false;
 
 clear tmpInd kMarginA kMarginB
 
 %% TARGETS
-str = 'INIT - prepareDomain: apply targets';
+str = 'INIT - prepareDomain: apply target(s)';
 if isgui
     set(gui.text_handles.Status,'String', str);
 else
@@ -126,6 +117,18 @@ pause(0.001);
 
 % take care of target
 if params.useTarget
+    % prepare calculation of voxels inside target
+    tmpdata.domain = domain;
+    tmpdata.params = params;
+    [tmpdata] = setTargetPosition(tmpdata,'calc');
+    params = tmpdata.params;
+
+    % get target voxel volume
+    target = params.target;
+    target_vol = sum(target(:)>1);
+    params.VOLtarget = target_vol;
+
+    % get occupied target voxel indices
     index = sub2ind(size(M), params.targetIDX(:,1)+marg,...
         params.targetIDX(:,2)+marg, params.targetIDX(:,3)+marg);
     % mark target voxels as occupied in M
@@ -136,6 +139,8 @@ if params.useTarget
     % mark target voxels in Lr
     L2(index) = params.ID_MASKED.Target.Lr;
 else
+    params.VOLtarget = 0;
+
     xstart = round(size(M,1)/2);
     ystart = round(size(M,2)/2);
     zstart = round(size(M,3)/2);
@@ -176,6 +181,7 @@ if params.use_mask
 
     for iMask = 1:nMask
         curMask = params.masks{iMask};
+        
         if isfield(curMask,'arrMinMaxXYZ')
             arrMinMaxXYZ = curMask.arrMinMaxXYZ;
 
@@ -194,31 +200,15 @@ if params.use_mask
         end
 
         if isfield(curMask,'arrTiltDegXY')
-            maxX = domain.dx*domain.nx;
-            maxY = domain.dx*domain.ny;
-            [tmpY,tmpX,tmpZ] = meshgrid(domain.dx*(1:domain.ny),...
-                domain.dx*(1:domain.nx),domain.dx*(1:domain.nz));
-
-            arrSlope = curMask.arrTiltDegXY;
-
-            if isfield(curMask,'zBaseMinTop')
-                zBase = curMask.zBaseMinTop+abs((maxX-curMask.arrBaseXYZ(1))*tan(arrSlope(1)*pi/180)...
-                    + abs(maxY-curMask.arrBaseXYZ(2))*tan(arrSlope(2)*pi/180));
-                curMask.arrBaseXYZ(3) = zBase;
-            end
-            arrBase = curMask.arrBaseXYZ;
-
-
-            tmpSel = tmpZ <= (arrBase(3)+(arrBase(1)-tmpX)*tan(arrSlope(1)*pi/180)...
-                + (arrBase(2)-tmpY)*tan(arrSlope(2)*pi/180));
-            clear tmpY tmpX tmpZ
+            
+           [index] = getMaskVoxel(curMask,[domain.nx domain.ny domain.nz],domain,params,'prep');
 
             % mark masked region as invalid for new grain centers
-            M_valCtr(tmpSel) = false;
+            M_valCtr(index) = false;
 
             % mark masked region as air in Lr
-            L2(tmpSel) = params.ID_MASKED.Air.Lr;
-            clear tmpSel;
+            L2(index) = params.ID_MASKED.Air.Lr;
+            clear index;
         end
     end
 end

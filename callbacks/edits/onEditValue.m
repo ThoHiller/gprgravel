@@ -75,6 +75,21 @@ if ~isempty(fig) && strcmp(get(fig,'Tag'),'GPRGRAVEL')
         % --- DOMAIN ------------------------------------------------------
         % -----------------------------------------------------------------
         case {'domain_xm','domain_ym','domain_zm'}
+
+            if data.params.useTarget
+                centD = [data.domain.xm/2 data.domain.ym/2 data.domain.zm/2];
+                data.params.targetCenter = centD;
+                set(gui.edit_handles.targetx,'String',sprintf('%4.3f',data.params.targetCenter(1)));
+                set(gui.edit_handles.targety,'String',sprintf('%4.3f',data.params.targetCenter(2)));
+                set(gui.edit_handles.targetz,'String',sprintf('%4.3f',data.params.targetCenter(3)));
+                % update the data inside the GUI
+                setappdata(fig,'data',data);
+                % move target
+                data = setTargetPosition(data,'view');
+                % update the data inside the GUI
+                setappdata(fig,'data',data);
+            end
+            % update plot
             plotDomaindata(fig);
 
         case 'domain_porosity'
@@ -127,10 +142,8 @@ if ~isempty(fig) && strcmp(get(fig,'Tag'),'GPRGRAVEL')
             % --- PARAMS --------------------------------------------------
             % -------------------------------------------------------------
         case {'params_targetCenterx','params_targetCentery',...
-                'params_targetCenterz','params_targetOrientp',...
-                'params_targetOrienta'}
-            data.params.targetCenterOld = data.params.targetCenter;
-            data.params.targetOrientOld = data.params.targetOrient;
+                'params_targetCenterz','params_targetTheta',...
+                'params_targetPhi'}
             switch tag
                 case 'params_targetCenterx'
                     data.params.targetCenter(1) = val;
@@ -138,15 +151,15 @@ if ~isempty(fig) && strcmp(get(fig,'Tag'),'GPRGRAVEL')
                     data.params.targetCenter(2) = val;
                 case 'params_targetCenterz'
                     data.params.targetCenter(3) = val;
-                case 'params_targetOrientp'
-                    data.params.targetOrient(1) = val;
-                case 'params_targetOrienta'    
-                    data.params.targetOrient(2) = val;
+                case 'params_targetTheta'
+                    data.params.targetTheta = val;
+                case 'params_targetPhi'    
+                    data.params.targetPhi = val;
             end
             % update the data inside the GUI
             setappdata(fig,'data',data);
             % move target
-            data = setTargetPosition(data);
+            data = setTargetPosition(data,'view');
             % update the data inside the GUI
             setappdata(fig,'data',data);
             % update plot
@@ -164,6 +177,7 @@ if ~isempty(fig) && strcmp(get(fig,'Tag'),'GPRGRAVEL')
             % update the data inside the GUI
             setappdata(fig,'data',data);
             plotDomaindata(fig);
+            data = getappdata(fig,'data');
 
         case 'params_maskdipy'
             % maximum angle until surface touches bottom in y-dircetion
@@ -177,12 +191,21 @@ if ~isempty(fig) && strcmp(get(fig,'Tag'),'GPRGRAVEL')
             % update the data inside the GUI
             setappdata(fig,'data',data);
             plotDomaindata(fig);
+            data = getappdata(fig,'data');
 
         case {'params_satProfileTop','params_satProfileBottom'}
             id = findobj('Tag','params_satProfileTop');
             data.params.satBounds(1) = str2double(get(id,'String'));
             id = findobj('Tag','params_satProfileBottom');
             data.params.satBounds(2) = str2double(get(id,'String'));
+
+        case {'params_PMLx','params_PMLy','params_PMLz'}
+            id = findobj('Tag','params_PMLx');
+            data.params.pml_w(1) = str2double(get(id,'String'));
+            id = findobj('Tag','params_PMLy');
+            data.params.pml_w(2) = str2double(get(id,'String'));
+            id = findobj('Tag','params_PMLz');
+            data.params.pml_w(3) = str2double(get(id,'String'));
     end
     
     % update GUI data

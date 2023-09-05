@@ -53,46 +53,51 @@ if ~isempty(fig) && strcmp(get(fig,'Tag'),'GPRGRAVEL')
     if ~isempty(target) && sum(target(:)) ~= 0
         % target successfully imported
         params.useTarget = true;
-
-        target = permute(target,[2 3 1]);
         
         % IMPORTANT:
         % we assume the target grid resolution is 2mm!
-        [xt,yt,zt] = size(target);
-        xt = xt*0.002;
-        yt = yt*0.002;
-        zt = zt*0.002;
-
-        centD = [domain.xm/2 domain.ym/2 domain.zm/2];
-        centT = [xt/2 yt/2 zt/2];
-        shift = centD-centT;
-        shift = floor(shift./domain.dx);
-
         szT = size(target);
-        params.targetDIM = szT;
-        target = target(:);
-        ind = 1:1:numel(target); ind = ind(:);
-        ind = ind(target>0);
-        target = target(target>0);
-        % set all targets to index 2
-        target(:) = 2;
+        xt = szT(1)*0.002;
+        yt = szT(2)*0.002;
+        zt = szT(3)*0.002;
 
-        [ixt,iyt,izt] = ind2sub(szT,ind);
-        ixt = ixt+shift(1);
-        iyt = iyt+shift(2);
-        izt = izt+shift(3);
-        params.target = target;
-        params.targetIDX = [ixt iyt izt];
+        % internally target always gets ID 2
+        target(target>0) = 2;
+
+        % domain center
+        centD = [domain.xm/2 domain.ym/2 domain.zm/2];
+        % local center of target box
+        centT = [xt/2 yt/2 zt/2];
+        % shift vector to place target at domain center
+        shift = centD-centT;
+        shift0 = floor(shift./domain.dx);
+
+        % store target dimensions
+        params.targetDIM = szT;
+        % store original unrotated target array
+        params.targetORG = target;
+
+        [target1D,pos] = getTargetPositionVector(target,shift0);
+        % get target surface
+        params.targetSurf = isosurface(permute(target,[2 1 3]),1.5);
+        params.targetSurf.vertices = params.targetSurf.vertices.*domain.dx;
+        params.targetSurf.vertices = params.targetSurf.vertices+shift;
+        params.targetSurfORG = params.targetSurf;
+
+        params.target = target1D;        
+        params.targetIDX = pos;
         params.targetCenter = centD;
 
-        % update the GSD file name text fiedl
+        % update the target filename text field
         set(gui.edit_handles.targetfile,'String',params.targetFile);
         % activate control fields
-        set(gui.edit_handles.targetx,'Enable','on');
-        set(gui.edit_handles.targety,'Enable','on');
-        set(gui.edit_handles.targetz,'Enable','on');
-        set(gui.edit_handles.targetp,'Enable','on');
-        set(gui.edit_handles.targeta,'Enable','on');
+        set(gui.edit_handles.targetx,'Enable','on','String',sprintf('%4.3f',params.targetCenter(1)));
+        set(gui.edit_handles.targety,'Enable','on','String',sprintf('%4.3f',params.targetCenter(2)));
+        set(gui.edit_handles.targetz,'Enable','on','String',sprintf('%4.3f',params.targetCenter(3)));
+        params.targetTheta = 0;
+        params.targetPhi = 0;
+        set(gui.edit_handles.targetTheta,'Enable','on','String',sprintf('%3.1f',params.targetTheta));
+        set(gui.edit_handles.targetPhi,'Enable','on','String',sprintf('%3.1f',params.targetPhi));
 
         % update GUI data
         data.domain = domain;

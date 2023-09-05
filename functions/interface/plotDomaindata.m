@@ -49,8 +49,10 @@ zmax = domain.zm;
 
 if params.useTarget
     axes(ax);
-    ix = params.targetIDX.*domain.dx;
-    plot3(ix(:,1),ix(:,2),ix(:,3),'k.','Parent',ax);
+    patch('Vertices',params.targetSurf.vertices,'Faces',params.targetSurf.faces,...
+        'FaceColor',[0.65 0.65 0.65],'FaceAlpha',1,'EdgeColor','none','Parent',ax);
+    camlight;
+    lighting gouraud;
 end
 
 % if the surface dips, take care of it
@@ -67,12 +69,25 @@ yplane2 = [xmax ymin zBase(2); xmax ymax zmin; xmax ymax zmax; xmax ymin zmax];
 zplane1 = [xmin ymin zBase(1)+zBase(2); xmax ymin zBase(2); xmax ymax zmin; xmin ymax zBase(1)];
 zplane2 = [xmin ymin zmax; xmax ymin zmax; xmax ymax zmax; xmin ymax zmax];
 
+% if params.maskdipx(1)~=0 || params.maskdipy(1)~=0
+    P0 = zplane1(2,:);
+    P1 = zplane1(3,:);
+    P2 = zplane1(1,:);
+    normal = cross(P1-P0,P2-P0);
+    params.maskplane.points = [P0;P1;P2];
+    params.maskplane.normal = normal./norm(normal);
+    data.params = params;
+    setappdata(fig,'data',data);
+% end
+
 % plot the planes
 V = [xplane1;xplane2;yplane1;yplane2;zplane1;zplane2];
 F = [1 2 3 4; 5 6 7 8; 9 10 11 12; 13 14 15 16; 17 18 19 20; 21 22 23 24];
 ph = patch('Faces',F,'Vertices',V,'Parent',ax);
-ph.FaceAlpha = 0.5;
+ph.FaceAlpha = 0;%0.5;
 ph.FaceColor = gui.myui.color.domain;
+ph.EdgeColor = gui.myui.color.domain;
+ph.LineWidth = gui.myui.linewidth;
 
 % plot the center axes
 plot3([xmin xmax],[(ymax-ymin)/2 (ymax-ymin)/2],[(zmax-zmin)/2 (zmax-zmin)/2],...

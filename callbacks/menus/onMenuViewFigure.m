@@ -58,76 +58,79 @@ if ~isempty(fig) && strcmp(get(fig,'Tag'),'GPRGRAVEL')
             end
             ax = axes('Parent',expfig);
             
-            % get monitor data
-            Lr = data.domain.final{1}.Lr;
+            % get final data
+            Lr = data.domain.final{2}.Lr;
             % remove grains smaller
             threshR = 1e-3;
             Lr(Lr<threshR) = NaN;
             % remove water
-%             threshW = 99;
-%             Lr(Lr==threshW) = NaN;
+            threshW = 99;
+            Lr(Lr==threshW) = NaN;
+            % remove target
+            threshT = 9999;
+            Lr(Lr==threshT) = NaN;
 
             % prepare slices
             szL = size(Lr);
 
-            x = 0:domain.dx:domain.xm;
-            y = 0:domain.dx:domain.ym;
-            z = 0:domain.dx:domain.zm;
-
-            mx = szL(1)-numel(x);
-            my = szL(2)-numel(y);
-            mz = szL(3)-numel(z);
-
-            xx = -(mx/2*domain.dx):domain.dx:domain.xm+(mx/2*domain.dx);
-            yy = -(my/2*domain.dx):domain.dx:domain.ym+(my/2*domain.dx);
-            if mod(mz,2)==0
-                zz = -(mz/2*domain.dx):domain.dx:domain.zm+(mz/2*domain.dx);
-            else
-                zz = -(floor(mz/2)*domain.dx):domain.dx:domain.zm+(ceil(mz/2)*domain.dx);
-            end
-
-            xticks = linspace(domain.marg,szL(1)-domain.marg,5);
+            xticks = linspace(0,szL(1),5);
+            xtickL = cell(size(xticks));
             for i = 1:numel(xticks)
-                xtickL{i} = sprintf('%3.2f',(xticks(i)-domain.marg)*domain.dx);
+                xtickL{i} = sprintf('%3.2f',(xticks(i))*domain.dx);
             end
-            yticks = linspace(domain.marg,szL(2)-domain.marg,5);
+            yticks = linspace(0,szL(2),5);
+            ytickL = cell(size(yticks));
             for i = 1:numel(yticks)
-                ytickL{i} = sprintf('%3.2f',(yticks(i)-domain.marg)*domain.dx);
+                ytickL{i} = sprintf('%3.2f',(yticks(i))*domain.dx);
             end
-            zticks = linspace(domain.marg,szL(3)-domain.marg,5);
+            zticks = linspace(0,szL(3),5);
+            ztickL = cell(size(zticks));
             for i = 1:numel(zticks)
-                ztickL{i} = sprintf('%3.2f',(zticks(i)-domain.marg)*domain.dx);
+                ztickL{i} = sprintf('%3.2f',(zticks(i))*domain.dx);
             end
+            
+            % plot the voxel volume
+            % if there is a target only show half of the domain
+            if params.useTarget
+                cut = [1 size(Lr,1)...
+                    1 params.targetCenter(2)/domain.dx ...
+                    1 size(Lr,3)];
+            else
+                cut = [1 size(Lr,1) 1 size(Lr,2) 1 size(Lr,3)];
+            end
+            Lr = Lr(cut(1):cut(2),cut(3):cut(4),cut(5):cut(6));
+
             % swap xy dimension
             Lr = permute(Lr,[2 1 3]);
-
-            % plot the voxel volume
+            box = [1 size(Lr,1) 1 size(Lr,2) 1 size(Lr,3)];
             axes(ax);
-            voxelSurf(Lr,false,[1 size(Lr,1) 1 size(Lr,2) 1 size(Lr,3)],1);
+            voxelSurf(Lr,false,box,1);
             hold(ax,'on');
 
             % colors
             cmap = flipud(copper(numel(grains.rbins)));
             cmap = [cmap;0 0 1];
             set(expfig,'Colormap',cmap);
-            cticks = [linspace(domain.dx/2,max(grains.rbins),5) max(grains.rbins)*1.1];
             set(ax,'CLim',[1e-4  max(grains.rbins)*1.1]);
-            cbh = colorbar;
-            ctickL = cell(1,1);
-            for i = 1:numel(cticks)
-                ctickL{i} = [sprintf('%d',round(1e3*cticks(i))),'mm'];
-                if i == numel(cticks)
-                    ctickL{i} = 'water';
-                end
+
+            % colorbar
+            cbh = colorbar(ax,'Location','EastOutside');
+            vec = [1e-4 0.005 0.01 0.015 0.02 0.025 0.03 0.035 0.04 0.045 0.5];
+            vec = vec(vec<max(grains.rbins));
+            vecstr = cell(1,1);
+            for i1 = 1:numel(vec)
+                vecstr{i1} = sprintf('%d',round(1e3*vec(i1)));
             end
-            set(cbh,'Ticks',cticks,'TickLabels',ctickL,...
-                'FontSize',gui.myui.axfontsize); 
+            vecstr{1} = 'r [mm]';
+            vecstr{end+1} = 'water';
+            set(cbh,'Ticks',[vec max(grains.rbins)*1.1],...
+                'TickLabels',vecstr,'FontSize',gui.myui.axfontsize);
             
             % add the domain planes
             % in voxel units
-            xmin = domain.marg+1;
-            ymin = domain.marg+1;
-            zmin = domain.marg+1;
+            xmin = 0;
+            ymin = 0;
+            zmin = 0;
             xmax = xmin+domain.xm/domain.dx;
             ymax = ymin+domain.ym/domain.dx;
             zmax = zmin+domain.zm/domain.dx;
@@ -137,7 +140,7 @@ if ~isempty(fig) && strcmp(get(fig,'Tag'),'GPRGRAVEL')
                 (ymax-ymin)*tand(params.maskdipy(1))];
 
             % planes parallel to x
-            xplane1 = [xmin ymin zBase(1)+zBase(2); xmax ymin zBase(2); xmax ymin zmax; xmin ymin zmax];
+            xplane1 = [xmin ymin (zBase(1)+zBase(2)); xmax ymin zBase(2); xmax ymin zmax; xmin ymin zmax];
             xplane2 = [xmin ymax zBase(1); xmax ymax zmin; xmax ymax zmax; xmin ymax zmax];
             % planes parallel to y
             yplane1 = [xmin ymin zBase(1)+zBase(2); xmin ymax zBase(1); xmin ymax zmax; xmin ymin zmax];
@@ -149,22 +152,28 @@ if ~isempty(fig) && strcmp(get(fig,'Tag'),'GPRGRAVEL')
             % plot the planes
             V = [xplane1;xplane2;yplane1;yplane2;zplane1;zplane2];
             F = [1 2 3 4; 5 6 7 8; 9 10 11 12; 13 14 15 16; 17 18 19 20; 21 22 23 24];
-%             ph = patch('Faces',F,'Vertices',V,'Parent',ax);
-%             ph.FaceAlpha = 0;
-%             ph.EdgeColor = gui.myui.color.domain;
-%             ph.LineWidth = 3;
+            ph = patch('Faces',F,'Vertices',V,'Parent',ax);
+            ph.FaceAlpha = 0;
+            ph.EdgeColor = gui.myui.color.domain;
+            ph.LineWidth = gui.myui.linewidth;
+
+            if params.useTarget
+                patch('Vertices',params.targetSurf.vertices./domain.dx,'Faces',params.targetSurf.faces,...
+                    'FaceColor',[0.5 0.5 0.5],'FaceAlpha',1,'EdgeColor','none','Parent',ax);
+            end
 
             set(get(ax,'Title'),'String',...
                 sprintf('only grains larger than radius: %d mm are shown', 1e3*threshR));
-            set(ax,'XTick',xticks,'XTickLabel',xtickL,...
-                'YTick',yticks,'YTickLabel',ytickL,...
-                'ZTick',zticks,'ZTickLabel',ztickL);
+            set(ax,'XTick',xticks,'XTickLabel',xtickL,'XLim',[-domain.marg domain.nx0+domain.marg],...
+                'YTick',yticks,'YTickLabel',ytickL,'YLim',[-domain.marg domain.ny0+domain.marg],...
+                'ZTick',zticks,'ZTickLabel',ztickL,'ZLim',[-domain.marg domain.nz0+domain.marg]);
             set(get(ax,'XLabel'),'String','x [m]');
             set(get(ax,'YLabel'),'String','y [m]');
             set(get(ax,'ZLabel'),'String','z [m]');
             set(ax,'ZDir','reverse');
             set(ax,'FontSize',gui.myui.axfontsize);
             hold(ax,'off');
+            view(ax,[148 30]);
 
         case 'Voxelised Grains'
             expfig = findobj('Tag','GPRGRAVELvoxelgrains');
@@ -216,14 +225,14 @@ if ~isempty(fig) && strcmp(get(fig,'Tag'),'GPRGRAVEL')
 
                 % code copied from voxelSurf.m:
                 ax = subplot(axn,axn,i,'Parent',expfig);
-                h = trisurf(TT,X,Y,Z,CC,'EdgeColor','none','FaceAlpha',1,'Parent',ax);
+                trisurf(TT,X,Y,Z,CC,'EdgeColor','none','FaceAlpha',1,'Parent',ax);
 
                 aa = [1 size(M,1) 1 size(M,2) 1 size(M,3)];
                 material(ax,[0.2 0.7 0.3])
                 daspect(ax,[1 1 1]);
                 pbaspect(ax,[1 1 1]);
                 % camproj(ax,'perspective')
-                %replot light sources
+                % replot light sources
                 % delete(findall(gcf,'Type','light'))
                 light(ax,'Position',[(aa(2)-aa(1))/2     (aa(4)-aa(3))/2       aa(5)-(aa(6)-aa(5))],'Style','local')
                 light(ax,'Position',[(aa(2)-aa(1))/2     (aa(4)-aa(3))/2       aa(6)+(aa(6)-aa(5))],'Style','local')

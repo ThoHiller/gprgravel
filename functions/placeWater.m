@@ -63,16 +63,16 @@ if ~params.useSatProfile % random
     % porosity goal
     % now we only add water voxels until the final air volume is
     % reached
-    poro_final = domain.VolSpeciesAIR;
+%     poro_final = domain.VolSpeciesAIR;
 
     % global grain counter
-    %         n_start = max(max(domain.final{1}.Ln(:)));
+    % n_start = max(max(domain.final{1}.Ln(:)));
 
     % index of r bin class to set (usually the two smallest ones:
     % single voxel and 7 voxel crosses)
     idr = 1;
     rbins = grains.rbins(idr);
-    nbins = grains.nbins(idr);
+%     nbins = grains.nbins(idr);
     binVol = grains.binVol(idr);
 
     % get the matrices with the margin
@@ -89,12 +89,12 @@ if ~params.useSatProfile % random
     marg = domain.marg;
 
     % estimate how many voxel to set globally to reach desired porosity
-    %         v_to_add = numel(domain.final{2}.M(:)) - sum(domain.final{2}.M(:)) - round(numel(domain.final{2}.M(:))*poro_final);
-    %         v_to_add = domain.VOL0  - (sum(domain.final{2}.M(:)) - domain.VOLmask) - round(domain.VOL0*poro_final);
-    %         v_to_add = domain.VOL0  - (sum(domain.final{2}.M(:)) - domain.VOLmask) - round(domain.VOL0*poro_final);
-    v_to_add = domain.VOL0  - (sum(domain.final{1}.M(domain.kEvalPoro)) - round(domain.VOL0*poro_final));
+    % v_to_add = numel(domain.final{2}.M(:)) - sum(domain.final{2}.M(:)) - round(numel(domain.final{2}.M(:))*poro_final);
+    % v_to_add = domain.VOL0  - (sum(domain.final{2}.M(:)) - domain.VOLmask) - round(domain.VOL0*poro_final);
+    % v_to_add = domain.VOL0  - (sum(domain.final{2}.M(:)) - domain.VOLmask) - round(domain.VOL0*poro_final);
+    % v_to_add = domain.VOL0  - (sum(domain.final{1}.M(domain.kEvalPoro)) - round(domain.VOL0*poro_final));
 
-    nVoxMatrix = sum(domain.final{1}.M(domain.kEvalPoro));
+%     nVoxMatrix = sum(domain.final{1}.M(domain.kEvalPoro));
     nVoxExisting = sum(domain.final{1}.Lr(domain.kEvalPoro) == params.ID_MASKED.Water.Lr);
     nVoxWaterTarget = round(domain.VOL0*domain.VolSpeciesH2O);
     nVoxWaterToAdd = nVoxWaterTarget-nVoxExisting;
@@ -119,12 +119,12 @@ if ~params.useSatProfile % random
     clear M_valCtr;
     MvN = numel(Mindex);
 
-    %         list(1).Mindex = Mindex;
-    %         list(1).MvN = MvN;
+    % list(1).Mindex = Mindex;
+    % list(1).MvN = MvN;
 
 
     % start porosity
-    %         poro = domain.porosity_final;
+    % poro = domain.porosity_final;
 
     % continuous grain counter
     n = n_start + 1;
@@ -132,13 +132,13 @@ if ~params.useSatProfile % random
     stat = [0 0 0 0];
     nVoxWaterAdded = 0;
 
-    arrPackVel = zeros(2,2);
-    arrPackVel(2,:) = [toc nVoxWaterAdded];
-    velPackMax = 0;
+%     PackVel = zeros(2,2);
+%     PackVel(2,:) = [toc nVoxWaterAdded];
+%     velPackMax = 0;
 
-    %         nDumpUpdateCurBin = max([1 round(nVoxWaterToAdd/params.dumpsPerBin)]);
+    % nDumpUpdateCurBin = max([1 round(nVoxWaterToAdd/params.dumpsPerBin)]);
     params.dump = 10000;
-    %         while poro > poro_final
+    % while poro > poro_final
     while nVoxWaterAdded < nVoxWaterToAdd
 
         % the larger grains first
@@ -147,7 +147,7 @@ if ~params.useSatProfile % random
             % current radius of grain in [m]
             r = rbins(i);
             % radius in lattice units
-            r2 = ceil(r/domain.dx);
+%             r2 = ceil(r/domain.dx);
             % current grain
             sphere = getSubBodyCoords(grains.shape,grains.axes,r,domain.dx);
             % a grain that is one lattice unit larger
@@ -164,7 +164,7 @@ if ~params.useSatProfile % random
 
                 % update indexList every xxx tries
                 if mod(stat(1),5e5) == 0
-                    log = [log sprintf('%s: Updating index list.\n',datestr(now,'dd.mm.yy HH:MM'))];
+                    log = [log sprintf('%s: Updating index list.\n',datestr(now,'dd.mm.yy HH:MM'))]; %#ok<AGROW> 
                     showLogInfo(log,isgui,gui);
                     pause(0.01);
                     [Mindex,MvN] = updateIndexList('std',M,marg/2,rbins(1),xyzr0,domain,grains);
@@ -203,7 +203,7 @@ if ~params.useSatProfile % random
                 % if the current water voxel touches nothing (sum(A)==0) and
                 % the larger "grain" touches an already existing grain
                 % (sum(B)>0) then place it
-                if sum(A(:)) == 0 && sum(B(:))>0
+                if sum(A(:)) == 0 && sum(B(:)) > 0
                     % mark the new grain
                     M(index) = true;
                     % and label it
@@ -212,7 +212,7 @@ if ~params.useSatProfile % random
                     end
                     L2(index) = 99; % water marker
                     % coordinate lists
-                    %                         xyzr(n,1:4) = [(center-1-marg)*domain.dx, 99];
+                    %  xyzr(n,1:4) = [(center-1-marg)*domain.dx, 99];
                     xyzr0(n,1:4) = [center, 99];
                     % increase counters
                     % current bin
@@ -230,18 +230,12 @@ if ~params.useSatProfile % random
                     stat(3) = stat(3) + 1;
                 end
 
-
-                %                     poro = 1-sum(M(domain.kEvalPoro))/domain.VOL0;
-                %                     pAir = 1-(nVoxMatrix + nVoxWaterAdded)/domain.VOL0;
+                % poro = 1-sum(M(domain.kEvalPoro))/domain.VOL0;
+                % pAir = 1-(nVoxMatrix + nVoxWaterAdded)/domain.VOL0;
 
                 % output some statistics from time to time
                 if mod(stat(1),params.dump) == 0
-                    % timing
-                    t1 = toc;
-                    %                         disp(['current porosity : ',sprintf('%4.3f',poro)]);
-                    %                         disp(['current water    : ',num2str(nb),...
-                    %                             ' / ',num2str(nbins(i))]);
-
+                    % how mcuh water voxels are already set
                     CurWater = nVoxWaterAdded/nVoxWaterToAdd;
                     str = ['RUN - placeWater: water voxels: ',sprintf('%d',round(100*CurWater)),'%'];
                     if isgui
@@ -250,24 +244,14 @@ if ~params.useSatProfile % random
                         disp(str);
                     end
                     pause(0.001);
-
-
-                    %  fprintf('current water      : [%s] %4.2f%%(%4dk/%4dk added)\n',getProgbar(dblProgCurWater,50),100*dblProgCurWater,round([nVoxWaterAdded,nVoxWaterToAdd]/1000));
-                    %                     disp(['total tries      : ',num2str(stat(1))]);
-                    %                     disp(['center hits      : ',num2str(stat(2))]);
-                    %                     disp(['occupied hits    : ',num2str(stat(3))]);
-                    %                     disp(['current tries    : ',num2str(stat(4))]);
-                    %
-                    %                     arrPackVel(1,:) = arrPackVel(2,:);
-                    %                     arrPackVel(2,:) = [t1 nVoxWaterAdded];
-                    %                     velPackCur = 1e-3*diff(arrPackVel(:,2))/diff(arrPackVel(:,1));
-                    %                     velPackMax = max([velPackMax velPackCur]);
-                    %
-                    %                     %                         fprintf('cur. packing vel.: [%s] %4.3fk vox/s (%6.4f%%/min)\n',getProgbar(velPackCur/velPackMax,nBar),[velPackCur,100*60*1e3*velPackCur/domain.VOL0]);
-                    %
-                    %                     disp(['elapsed time     : ',sprintf('%4.2f',t1/60),' min']);
-                    %                     tEst = (nVoxWaterToAdd-nVoxWaterAdded)/(1e3*velPackCur);
-                    %                     fprintf('result estimated for %s (%4.2f min)\n',datestr(now+tEst/86400,'HH:MM:SS, dd.mm.yyyy'),tEst/60);
+                    % update Monitor
+                    if mod(stat(1),params.dump*10) == 0 && isgui
+                        data = getappdata(fig,'data');
+                        monitor.Lr = L2;
+                        data.monitor = monitor;
+                        setappdata(fig,'data',data);
+                        plotMatrixdata(fig,'monitor');
+                    end
                 end
 
                 % the current grain could not be set after 1e5 tries
@@ -291,8 +275,6 @@ if ~params.useSatProfile % random
             break;
         end
     end
-    % total run time
-    t = toc;
 
     % finalize the output data
     % and remove possible empty fields
@@ -344,7 +326,7 @@ else % profile
         L1 = domain.final{1}.Ln;
     end
     L2 = domain.final{1}.Lr;
-    MvC  =domain.final{1}.M_valCtr;
+%     MvC = domain.final{1}.M_valCtr;
     % get the coordinate lists
     % xyzr = domain.xyzr;
     xyzr0 = domain.xyzr0;
@@ -359,7 +341,7 @@ else % profile
     g_to_add = round(v_to_add*1.1);
 
     % extend point coordinate matrices
-    %         xyzr = [xyzr; zeros(g_to_add,4)];
+    % xyzr = [xyzr; zeros(g_to_add,4)];
     xyzr0 = [xyzr0; zeros(g_to_add,4)];
 
     % global grain counter
@@ -377,7 +359,7 @@ else % profile
             L1s = squeeze(L1(marg+1:size(M,1)-marg,marg+1:size(M,2)-marg,zi));
         end
         L2s = squeeze(L2(marg+1:size(M,1)-marg,marg+1:size(M,2)-marg,zi));
-        MvCs = squeeze(MvC(marg+1:size(MvC,1)-marg,marg+1:size(MvC,2)-marg,zi));
+%         MvCs = squeeze(MvC(marg+1:size(MvC,1)-marg,marg+1:size(MvC,2)-marg,zi));
 
         % count the empty voxels in the current layer
         c0 = sum(M1(:)==0);
@@ -459,17 +441,6 @@ else % profile
                 else
                     stat(2) = stat(2) + 1;
                 end
-
-                %                 if mod(stat(1),round(cw))==0
-                %                     clc;
-                %                     % timing
-                %                     t1 = toc;
-                %                     disp(['current slice    : ',sprintf('%d',zi-marg),'/',num2str(int32(domain.nz0))]);
-                %                     disp(['total tries      : ',num2str(stat(1))]);
-                %                     disp(['center hits      : ',num2str(stat(2))]);
-                %                     disp(['placed grains    : ',num2str(n-n_start)]);
-                %                     disp(['elapsed time     : ',sprintf('%4.2f',t1/60),' min']);
-                %                 end
             end
         end
 
@@ -480,6 +451,13 @@ else % profile
             disp(str);
         end
         pause(0.001);
+        if mod(zi,round(size(M,3)/20)) == 0 && isgui
+            data = getappdata(fig,'data');
+            monitor.Lr = L2;
+            data.monitor = monitor;
+            setappdata(fig,'data',data);
+            plotMatrixdata(fig,'monitor');
+        end
 
         % insert the current slice back into the larger block
         M(marg+1:size(M,1)-marg,marg+1:size(M,2)-marg,zi) = M1;
@@ -488,8 +466,6 @@ else % profile
         end
         L2(marg+1:size(M,1)-marg,marg+1:size(M,2)-marg,zi) = L2s;
     end
-    % total run time
-    t = toc;
 
     % finalize the output data
     % and remove possible empty fields
@@ -547,6 +523,14 @@ else
 end
 pause(0.001);
 
+% update the monitor plot one last time
+if isgui
+    data = getappdata(fig,'data');
+    monitor.Lr = L2;
+    data.monitor = monitor;
+    setappdata(fig,'data',data);
+    plotMatrixdata(fig,'result');
+end
 
 end
 

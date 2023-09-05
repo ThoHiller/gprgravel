@@ -121,6 +121,18 @@ set(get(ax,'Title'),'String',['slice: ',sprintf('%4.3f',(val-1)*domain.dx),'m'],
 set(ax,'FontSize',gui.myui.axfontsize);
 hold(ax,'off');
 
+% colorbar
+cbh = colorbar(ax,'Location','EastOutside');
+vec = [1e-4 0.005 0.01 0.015 0.02 0.025 0.03 0.035 0.04 0.045 0.5];
+vec = vec(vec<max(grains.rbins));
+vecstr = cell(1,1);
+for i1 = 1:numel(vec)
+    vecstr{i1} = sprintf('%4.3f',vec(i1));
+end
+vecstr{1} = 'r [m]';
+vecstr{end+1} = 'water';
+set(cbh,'Ticks',[vec max(grains.rbins)*1.1],'TickLabels',vecstr);
+
 end
 
 %------------- END OF CODE --------------
